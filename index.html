@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>For Relena: Cat Catching Game</title>
     <style>
         * {
@@ -20,6 +20,8 @@
             min-height: 100vh;
             overflow: hidden;
             color: #5a3e36;
+            touch-action: manipulation;
+            padding: 20px;
         }
 
         .game-container {
@@ -30,6 +32,26 @@
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
             overflow: hidden;
+        }
+
+        /* Mobile styles - only apply on smaller screens */
+        @media (max-width: 850px) {
+            body {
+                padding: 10px;
+            }
+            
+            .game-container {
+                width: 100%;
+                height: 90vh;
+                max-height: 700px;
+                border-radius: 15px;
+            }
+        }
+
+        @media (max-height: 650px) {
+            .game-container {
+                height: 95vh;
+            }
         }
 
         .screen {
@@ -101,11 +123,10 @@
 
         .stats-container {
             position: absolute;
-            top: 70px;
-            width: 100%;
+            top: 20px;
+            left: 20px;
             display: flex;
-            justify-content: space-between;
-            padding: 0 20px;
+            gap: 15px;
             z-index: 5;
         }
 
@@ -199,10 +220,149 @@
             }
         }
         
-        .music-info {
-            margin-top: 10px;
-            font-style: italic;
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 30px;
+            z-index: 5;
+        }
+        
+        .control-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
             color: #ff6b88;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            user-select: none;
+            touch-action: manipulation;
+            border: 3px solid #ff8fa3;
+        }
+        
+        .orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .orientation-warning h2 {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        
+        .orientation-warning p {
+            color: white;
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+        
+        /* Mobile-specific adjustments */
+        @media (max-width: 850px) {
+            h1 {
+                font-size: clamp(32px, 7vw, 48px);
+                margin-bottom: 15px;
+            }
+
+            h2 {
+                font-size: clamp(24px, 5vw, 36px);
+                margin-bottom: 15px;
+            }
+
+            p {
+                font-size: clamp(16px, 4vw, 20px);
+                margin-bottom: 25px;
+            }
+
+            button {
+                font-size: clamp(18px, 4vw, 22px);
+                padding: 15px 40px;
+            }
+
+            .stats-container {
+                top: 15px;
+                left: 15px;
+                gap: 10px;
+            }
+
+            .score-display, .timer-display {
+                font-size: clamp(18px, 4vw, 22px);
+                padding: 10px 15px;
+            }
+
+            .message {
+                font-size: clamp(16px, 3.5vw, 20px);
+                bottom: 130px;
+            }
+
+            .music-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            .cat-emoji {
+                font-size: clamp(40px, 10vw, 60px);
+                margin: 15px;
+            }
+            
+            .mobile-controls {
+                display: flex;
+            }
+        }
+        
+        /* Show orientation warning on mobile in portrait mode */
+        @media (max-width: 850px) and (orientation: portrait) {
+            .orientation-warning {
+                display: flex;
+            }
+        }
+        
+        /* Adjust for very small screens */
+        @media (max-width: 350px) {
+            .stats-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+                top: 10px;
+            }
+            
+            .music-controls {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .mobile-controls {
+                padding: 0 20px;
+            }
+            
+            .control-btn {
+                width: 70px;
+                height: 70px;
+                font-size: 28px;
+            }
+            
+            .message {
+                bottom: 120px;
+            }
         }
     </style>
 </head>
@@ -213,7 +373,7 @@
             <h1>Cats Are Falling From The Sky!</h1>
             <h2>Cat Catching Game</h2>
             <div class="cat-emoji">😻</div>
-            <p>Catch as many cute falling cats as you can in 30 seconds!<br>Use your mouse to move the basket left and right.</p>
+            <p>Catch as many cute falling cats as you can in 30 seconds!<br>Use your mouse or touch controls to move the basket.</p>
             <button id="startButton">Start Game</button>
         </div>
         
@@ -227,9 +387,15 @@
             </div>
             <div class="stats-container">
                 <div class="score-display">Cats: <span id="score">0</span></div>
-                <div class="timer-display">Time: <span id="timer">45</span>s</div>
+                <div class="timer-display">Time: <span id="timer">30</span>s</div>
             </div>
             <div class="message">Catch the falling cats! ❤️</div>
+            
+            <!-- Mobile Controls - Only visible on touch devices -->
+            <div class="mobile-controls">
+                <div class="control-btn" id="leftBtn">←</div>
+                <div class="control-btn" id="rightBtn">→</div>
+            </div>
         </div>
         
         <!-- End Screen -->
@@ -251,6 +417,13 @@
             Your browser does not support the audio element.
         </audio>
     </div>
+    
+    <!-- Orientation Warning for Mobile -->
+    <div class="orientation-warning">
+        <h2>Please Rotate Your Device</h2>
+        <p>For the best gaming experience, please rotate your device to landscape mode.</p>
+        <div class="cat-emoji">📱</div>
+    </div>
 
     <script>
         // Game variables
@@ -261,6 +434,11 @@
         let timer = 30;
         let gameInterval;
         let timerInterval;
+        
+        // Touch/mobile variables
+        let leftPressed = false;
+        let rightPressed = false;
+        let touchStartX = null;
         
         // Music variables
         let audio;
@@ -280,6 +458,8 @@
         const playBtn = document.getElementById('playBtn');
         const pauseBtn = document.getElementById('pauseBtn');
         const muteBtn = document.getElementById('muteBtn');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
         
         // Initialize game
         function init() {
@@ -289,6 +469,9 @@
             // Set up audio
             audio = document.getElementById('gameMusic');
             audio.volume = 0.7;
+            
+            // Set up canvas for mobile if needed
+            setupMobileCanvas();
             
             // Event listeners
             canvas.addEventListener('mousemove', moveBasket);
@@ -300,8 +483,72 @@
             pauseBtn.addEventListener('click', pauseMusic);
             muteBtn.addEventListener('click', toggleMute);
             
+            // Mobile control event listeners (only add if on mobile)
+            if (isTouchDevice()) {
+                leftBtn.addEventListener('touchstart', () => leftPressed = true);
+                leftBtn.addEventListener('touchend', () => leftPressed = false);
+                leftBtn.addEventListener('touchcancel', () => leftPressed = false);
+                
+                rightBtn.addEventListener('touchstart', () => rightPressed = true);
+                rightBtn.addEventListener('touchend', () => rightPressed = false);
+                rightBtn.addEventListener('touchcancel', () => rightPressed = false);
+                
+                // Touch events for direct canvas control
+                canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+                canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            }
+            
             // Create floating hearts
             createHearts();
+        }
+        
+        // Check if device is touch-enabled
+        function isTouchDevice() {
+            return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        }
+        
+        // Setup canvas for mobile devices
+        function setupMobileCanvas() {
+            if (isTouchDevice()) {
+                // On mobile, we need to handle canvas resizing
+                const container = document.querySelector('.game-container');
+                const rect = container.getBoundingClientRect();
+                
+                // Set canvas size to match container
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                
+                // Adjust basket for mobile
+                basket.width = Math.max(80, canvas.width * 0.15);
+                basket.height = Math.max(30, canvas.height * 0.08);
+                basket.y = canvas.height - basket.height - 20;
+                basket.x = (canvas.width - basket.width) / 2;
+            }
+        }
+        
+        // Handle touch start for direct canvas control
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+        }
+        
+        // Handle touch move for direct canvas control
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (touchStartX === null) return;
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - touchStartX;
+            
+            // Move basket based on touch movement
+            basket.x += deltaX * 1.5;
+            
+            // Keep basket within canvas bounds
+            if (basket.x < 0) basket.x = 0;
+            if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+            
+            touchStartX = touch.clientX;
         }
         
         // Play music
@@ -327,6 +574,9 @@
         
         // Create floating hearts in background
         function createHearts() {
+            // Clear existing hearts
+            heartsContainer.innerHTML = '';
+            
             for (let i = 0; i < 20; i++) {
                 const heart = document.createElement('div');
                 heart.classList.add('heart');
@@ -414,6 +664,18 @@
         
         // Main game loop
         function updateGame() {
+            // Handle mobile controls
+            if (isTouchDevice() && (leftPressed || rightPressed)) {
+                if (leftPressed) {
+                    basket.x -= 10;
+                    if (basket.x < 0) basket.x = 0;
+                }
+                if (rightPressed) {
+                    basket.x += 10;
+                    if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+                }
+            }
+            
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
