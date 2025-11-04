@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Relena: Cat Catching Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ffafbd, #ffc3a0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #5a3e36;
+        }
+
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 10;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #ff6b88;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-size: 32px;
+            color: #ff8fa3;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        p {
+            font-size: 18px;
+            text-align: center;
+            line-height: 1.6;
+            max-width: 80%;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: linear-gradient(to right, #ff6b88, #ff8fa3);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 107, 136, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 107, 136, 0.6);
+        }
+
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(to bottom, #a1c4fd, #c2e9fb);
+        }
+
+        .stats-container {
+            position: absolute;
+            top: 70px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 5;
+        }
+
+        .score-display, .timer-display {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff6b88;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 18px;
+            color: #ff6b88;
+            z-index: 5;
+        }
+
+        .music-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 5;
+        }
+
+        .music-btn {
+            background: rgba(255, 255, 255, 0.8);
+            color: #ff6b88;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            font-size: 18px;
+        }
+
+        .cat-emoji {
+            font-size: 40px;
+            margin: 10px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hearts-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            color: #ff6b88;
+            opacity: 0;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .music-info {
+            margin-top: 10px;
+            font-style: italic;
+            color: #ff6b88;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen">
+            <h1>Cats Are Falling From The Sky!</h1>
+            <h2>Cat Catching Game</h2>
+            <div class="cat-emoji">😻</div>
+            <p>Catch as many cute falling cats as you can in 30 seconds!<br>Use your mouse to move the basket left and right.</p>
+            <button id="startButton">Start Game</button>
+        </div>
+        
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen hidden">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div class="music-controls">
+                <button class="music-btn" id="playBtn">▶️</button>
+                <button class="music-btn" id="pauseBtn">⏸️</button>
+                <button class="music-btn" id="muteBtn">🔊</button>
+            </div>
+            <div class="stats-container">
+                <div class="score-display">Cats: <span id="score">0</span></div>
+                <div class="timer-display">Time: <span id="timer">45</span>s</div>
+            </div>
+            <div class="message">Catch the falling cats! ❤️</div>
+        </div>
+        
+        <!-- End Screen -->
+        <div id="endScreen" class="screen hidden">
+            <h1>Game Over!</h1>
+            <h2>You caught <span id="finalScore">0</span> cats!</h2>
+            <div class="cat-emoji">🐾</div>
+            <p id="message">You're amazing! I hope I made you happy!</p>
+            <button id="restartButton">Play Again</button>
+        </div>
+        
+        <!-- Floating hearts in background -->
+        <div class="hearts-container" id="heartsContainer"></div>
+        
+        <!-- Audio element for the music -->
+        <audio id="gameMusic" loop>
+            <!-- Replace the src with the path to your downloaded Dilaw by Maki file -->
+            <source src="dilaw.mp3" type="audio/mp3">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <script>
+        // Game variables
+        let canvas, ctx;
+        let basket = { x: 350, y: 500, width: 100, height: 50 };
+        let cats = [];
+        let score = 0;
+        let timer = 30;
+        let gameInterval;
+        let timerInterval;
+        
+        // Music variables
+        let audio;
+        let isMuted = false;
+        
+        // DOM elements
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const endScreen = document.getElementById('endScreen');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const messageDisplay = document.getElementById('message');
+        const heartsContainer = document.getElementById('heartsContainer');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const muteBtn = document.getElementById('muteBtn');
+        
+        // Initialize game
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Set up audio
+            audio = document.getElementById('gameMusic');
+            audio.volume = 0.7;
+            
+            // Event listeners
+            canvas.addEventListener('mousemove', moveBasket);
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', startGame);
+            
+            // Music control event listeners
+            playBtn.addEventListener('click', playMusic);
+            pauseBtn.addEventListener('click', pauseMusic);
+            muteBtn.addEventListener('click', toggleMute);
+            
+            // Create floating hearts
+            createHearts();
+        }
+        
+        // Play music
+        function playMusic() {
+            audio.play().catch(e => {
+                console.log("Audio play failed:", e);
+                // If autoplay is blocked, show a message
+                alert("Please click the play button to start the music!");
+            });
+        }
+        
+        // Pause music
+        function pauseMusic() {
+            audio.pause();
+        }
+        
+        // Toggle mute
+        function toggleMute() {
+            isMuted = !isMuted;
+            audio.muted = isMuted;
+            muteBtn.textContent = isMuted ? "🔇" : "🔊";
+        }
+        
+        // Create floating hearts in background
+        function createHearts() {
+            for (let i = 0; i < 20; i++) {
+                const heart = document.createElement('div');
+                heart.classList.add('heart');
+                heart.innerHTML = '❤️';
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDelay = Math.random() * 6 + 's';
+                heart.style.fontSize = (Math.random() * 20 + 15) + 'px';
+                heartsContainer.appendChild(heart);
+            }
+        }
+        
+        // Move basket with mouse
+        function moveBasket(e) {
+            const rect = canvas.getBoundingClientRect();
+            basket.x = e.clientX - rect.left - basket.width / 2;
+            
+            // Keep basket within canvas bounds
+            if (basket.x < 0) basket.x = 0;
+            if (basket.x + basket.width > canvas.width) basket.x = canvas.width - basket.width;
+        }
+        
+        // Start the game
+        function startGame() {
+            // Reset game state
+            score = 0;
+            timer = 30;
+            cats = [];
+            
+            // Update displays
+            scoreDisplay.textContent = score;
+            timerDisplay.textContent = timer;
+            
+            // Switch screens
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            // Start music
+            playMusic();
+            
+            // Start game loop
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            
+            gameInterval = setInterval(updateGame, 1000/60); // 60 FPS
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        
+        // Update timer
+        function updateTimer() {
+            timer--;
+            timerDisplay.textContent = timer;
+            
+            if (timer <= 0) {
+                endGame();
+            }
+        }
+        
+        // End the game
+        function endGame() {
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            
+            // Note: We removed the pauseMusic() call here to keep music playing
+            // The music will continue playing after the game ends
+            
+            // Update final score
+            finalScoreDisplay.textContent = score;
+            
+            // Custom message based on score
+            if (score >= 30) {
+                messageDisplay.textContent = "Wow! You're a cat-catching expert!";
+            } else if (score >= 20) {
+                messageDisplay.textContent = "Great job! You're really good at this!";
+            } else if (score >= 10) {
+                messageDisplay.textContent = "Nice work! You caught quite a few cats!";
+            } else {
+                messageDisplay.textContent = "Thanks for playing! I made this game just for you.";
+            }
+            
+            // Switch to end screen
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+        }
+        
+        // Main game loop
+        function updateGame() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            drawBackground();
+            
+            // Spawn new cats randomly
+            if (Math.random() < 0.05) {
+                spawnCat();
+            }
+            
+            // Update and draw cats
+            for (let i = cats.length - 1; i >= 0; i--) {
+                const cat = cats[i];
+                
+                // Move cat down
+                cat.y += cat.speed;
+                
+                // Check if cat is caught
+                if (cat.y + cat.size > basket.y && 
+                    cat.y < basket.y + basket.height &&
+                    cat.x + cat.size > basket.x && 
+                    cat.x < basket.x + basket.width) {
+                    
+                    // Remove caught cat and increase score
+                    cats.splice(i, 1);
+                    score++;
+                    scoreDisplay.textContent = score;
+                    continue;
+                }
+                
+                // Remove cats that fall off screen
+                if (cat.y > canvas.height) {
+                    cats.splice(i, 1);
+                    continue;
+                }
+                
+                // Draw cat
+                drawCat(cat.x, cat.y, cat.size, cat.type);
+            }
+            
+            // Draw basket
+            drawBasket();
+        }
+        
+        // Draw background
+        function drawBackground() {
+            // Sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#a1c4fd');
+            gradient.addColorStop(1, '#c2e9fb');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            drawCloud(100, 80, 60);
+            drawCloud(300, 120, 40);
+            drawCloud(600, 70, 50);
+            drawCloud(700, 150, 30);
+        }
+        
+        // Draw a cloud
+        function drawCloud(x, y, size) {
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.arc(x + size * 0.8, y - size * 0.2, size * 0.8, 0, Math.PI * 2);
+            ctx.arc(x + size * 1.5, y, size, 0, Math.PI * 2);
+            ctx.arc(x + size * 0.8, y + size * 0.2, size * 0.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        // Spawn a new cat
+        function spawnCat() {
+            const size = Math.random() * 30 + 30;
+            const type = Math.floor(Math.random() * 3); // 0, 1, or 2 for different cat styles
+            
+            cats.push({
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                size: size,
+                speed: Math.random() * 3 + 2,
+                type: type
+            });
+        }
+        
+        // Draw a cat at the specified position
+        function drawCat(x, y, size, type) {
+            ctx.save();
+            ctx.translate(x + size/2, y + size/2);
+            
+            // Different cat styles
+            if (type === 0) {
+                // Orange cat
+                drawCatBody(size, '#FFA500');
+                drawCatFace(size, '#000');
+            } else if (type === 1) {
+                // Gray cat
+                drawCatBody(size, '#A9A9A9');
+                drawCatFace(size, '#000');
+            } else {
+                // Calico cat
+                drawCalicoCatBody(size);
+                drawCatFace(size, '#000');
+            }
+            
+            ctx.restore();
+        }
+        
+        // Draw cat body
+        function drawCatBody(size, color) {
+            // Body
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size/2, size/2.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Ears
+            ctx.beginPath();
+            ctx.moveTo(-size/3, -size/3);
+            ctx.lineTo(-size/6, -size/2);
+            ctx.lineTo(0, -size/3);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(size/3, -size/3);
+            ctx.lineTo(size/6, -size/2);
+            ctx.lineTo(0, -size/3);
+            ctx.fill();
+        }
+        
+        // Draw calico cat body with patches
+        function drawCalicoCatBody(size) {
+            // Base white body
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size/2, size/2.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Orange patches
+            ctx.fillStyle = '#FFA500';
+            ctx.beginPath();
+            ctx.ellipse(-size/4, -size/10, size/6, size/6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(size/4, size/8, size/5, size/5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Gray patches
+            ctx.fillStyle = '#A9A9A9';
+            ctx.beginPath();
+            ctx.ellipse(size/5, -size/8, size/7, size/7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(-size/5, size/6, size/6, size/6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Ears (one orange, one gray)
+            ctx.fillStyle = '#FFA500';
+            ctx.beginPath();
+            ctx.moveTo(-size/3, -size/3);
+            ctx.lineTo(-size/6, -size/2);
+            ctx.lineTo(0, -size/3);
+            ctx.fill();
+            
+            ctx.fillStyle = '#A9A9A9';
+            ctx.beginPath();
+            ctx.moveTo(size/3, -size/3);
+            ctx.lineTo(size/6, -size/2);
+            ctx.lineTo(0, -size/3);
+            ctx.fill();
+        }
+        
+        // Draw cat face
+        function drawCatFace(size, color) {
+            // Eyes
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(-size/6, -size/10, size/15, size/15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.ellipse(size/6, -size/10, size/15, size/15, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Nose
+            ctx.fillStyle = '#FF69B4';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size/20, size/20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Mouth
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, size/20);
+            ctx.lineTo(0, size/10);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, size/10);
+            ctx.lineTo(-size/10, size/8);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, size/10);
+            ctx.lineTo(size/10, size/8);
+            ctx.stroke();
+            
+            // Whiskers
+            ctx.beginPath();
+            ctx.moveTo(-size/6, size/20);
+            ctx.lineTo(-size/2, size/15);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(-size/6, size/15);
+            ctx.lineTo(-size/2, size/10);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(size/6, size/20);
+            ctx.lineTo(size/2, size/15);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(size/6, size/15);
+            ctx.lineTo(size/2, size/10);
+            ctx.stroke();
+        }
+        
+        // Draw the basket
+        function drawBasket() {
+            // Basket body
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+            
+            // Basket rim
+            ctx.fillStyle = '#A0522D';
+            ctx.fillRect(basket.x - 5, basket.y - 10, basket.width + 10, 10);
+            
+            // Basket pattern
+            ctx.strokeStyle = '#A0522D';
+            ctx.lineWidth = 2;
+            
+            // Vertical lines
+            for (let i = 1; i < 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(basket.x + (basket.width / 5) * i, basket.y);
+                ctx.lineTo(basket.x + (basket.width / 5) * i, basket.y + basket.height);
+                ctx.stroke();
+            }
+            
+            // Horizontal lines
+            for (let i = 1; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(basket.x, basket.y + (basket.height / 3) * i);
+                ctx.lineTo(basket.x + basket.width, basket.y + (basket.height / 3) * i);
+                ctx.stroke();
+            }
+            
+            // Handle
+            ctx.strokeStyle = '#A0522D';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.arc(basket.x + basket.width/2, basket.y - 15, 30, Math.PI, 0);
+            ctx.stroke();
+        }
+        
+        // Initialize the game when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
